@@ -1,0 +1,3 @@
+[submodule "ogl_gen"]
+	path = ogl_gen
+	url = https://github.com/rikkimax/ogl_gen

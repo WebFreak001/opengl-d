@@ -1,0 +1,10 @@
+{
+	"dependencies": {
+		"opengl:gl4": {
+			"path": "..",
+			"version": "*"
+		},
+		"derelict-sdl2": "~>1.9.7"
+	},
+	"name": "example"
+}
