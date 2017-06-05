@@ -1,4 +1,5 @@
 import derelict.sdl2.sdl;
+import opengl.d;
 import opengl.gl4;
 import opengl.loader;
 
@@ -22,8 +23,6 @@ void main()
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 		throw new SDLException();
 
-	loadGL!(opengl.gl4);
-
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 
@@ -35,6 +34,14 @@ void main()
 	const context = SDL_GL_CreateContext(window);
 	if (!context)
 		throw new SDLException();
+
+	loadGL!(opengl.gl4);
+
+	GL.enableDebugOutput = true;
+	GL.debugMessageCallback = (DebugSource source, DebugType type, uint id,
+			DebugSeverity severity, string message) {
+		writefln("[%s] [%s] #%s %s: %s", source, type, id, severity, message);
+	};
 
 	if (SDL_GL_SetSwapInterval(1) < 0)
 		writeln("Failed to set VSync");
@@ -61,8 +68,6 @@ void main()
 
 		SDL_GL_SwapWindow(window);
 	}
-
-	unloadScene();
 }
 
 //dfmt off
@@ -77,115 +82,56 @@ const float[] vertexBufferColors = [
 	0, 0, 1
 ];
 //dfmt on
-GLuint vertexBuffer;
-GLuint colorBuffer;
-GLuint programID;
-GLuint vertexArrayID;
+Buffer vertexBuffer;
+Buffer colorBuffer;
+Program program;
+VertexArray vertexArray;
 
 void loadScene()
 {
 	// create OpenGL buffers for vertex position and color data
-	glGenVertexArrays(1, &vertexArrayID);
-	glBindVertexArray(vertexArrayID);
+	vertexArray = VertexArray();
+	vertexArray.bind();
 
 	// load position data
-	glGenBuffers(1, &vertexBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, float.sizeof * vertexBufferPositions.length,
-			vertexBufferPositions.ptr, GL_STATIC_DRAW);
+	vertexBuffer = Buffer(BufferTarget.arrayBuffer);
+	vertexBuffer.setData(vertexBufferPositions, BufferUsage.staticDraw);
 
 	// load color data
-	glGenBuffers(1, &colorBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, colorBuffer);
-	glBufferData(GL_ARRAY_BUFFER, float.sizeof * vertexBufferColors.length,
-			vertexBufferColors.ptr, GL_STATIC_DRAW);
-
-	GLint result;
-	int infoLogLength;
+	colorBuffer = Buffer(BufferTarget.arrayBuffer);
+	colorBuffer.setData(vertexBufferColors, BufferUsage.staticDraw);
 
 	// compile shaders
-	GLuint vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-	const(char*) vertSource = import("shader.vert").toStringz;
-	glShaderSource(vertexShaderID, 1, &vertSource, null);
-	glCompileShader(vertexShaderID);
-	glGetShaderiv(vertexShaderID, GL_COMPILE_STATUS, &result);
-	glGetShaderiv(vertexShaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
-	if (infoLogLength > 0)
-	{
-		char* errorMessage;
-		glGetShaderInfoLog(vertexShaderID, infoLogLength, null, errorMessage);
-		writeln(errorMessage[0 .. infoLogLength]);
-	}
+	Shader vertexShader = Shader(ShaderType.vertex);
+	vertexShader.shaderSource = import("shader.vert");
+	vertexShader.source = "shader.vert";
+	vertexShader.compile();
 
-	GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-	const(char*) fragSource = import("shader.frag").toStringz;
-	glShaderSource(fragmentShaderID, 1, &fragSource, null);
-	glCompileShader(fragmentShaderID);
-	glGetShaderiv(fragmentShaderID, GL_COMPILE_STATUS, &result);
-	glGetShaderiv(fragmentShaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
-	if (infoLogLength > 0)
-	{
-		char* errorMessage;
-		glGetShaderInfoLog(fragmentShaderID, infoLogLength, null, errorMessage);
-		writeln(errorMessage[0 .. infoLogLength]);
-	}
+	Shader fragmentShader = Shader(ShaderType.fragment);
+	fragmentShader.shaderSource = import("shader.frag");
+	fragmentShader.source = "shader.frag";
+	fragmentShader.compile();
 
 	// link shaders
-	programID = glCreateProgram();
-	glAttachShader(programID, vertexShaderID);
-	glAttachShader(programID, fragmentShaderID);
-	glLinkProgram(programID);
-	glGetProgramiv(programID, GL_LINK_STATUS, &result);
-	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &infoLogLength);
-	if (infoLogLength > 0)
-	{
-		char* errorMessage;
-		glGetProgramInfoLog(programID, infoLogLength, null, errorMessage);
-		writeln(errorMessage[0 .. infoLogLength]);
-	}
-
-	// Delete unused compiled shaders because program is linked already
-	glDetachShader(programID, vertexShaderID);
-	glDetachShader(programID, fragmentShaderID);
-
-	glDeleteShader(vertexShaderID);
-	glDeleteShader(fragmentShaderID);
-}
-
-void unloadScene()
-{
-	glDeleteBuffers(1, &vertexBuffer);
-	glDeleteBuffers(1, &colorBuffer);
-	glDeleteVertexArrays(1, &vertexArrayID);
-	glDeleteProgram(programID);
+	program = Program();
+	program.attach(vertexShader);
+	program.attach(fragmentShader);
+	program.link();
 }
 
 void renderScene()
 {
-	glClear(GL_COLOR_BUFFER_BIT);
+	GL.clear(ClearBufferMask.COLOR_BUFFER_BIT);
 
-	glUseProgram(programID);
+	program.use();
 
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-	glVertexAttribPointer(0, // attribute 0. No particular reason for 0, but must match the layout in the shader.
-			3, // size
-			GL_FLOAT, // type
-			false, // normalized?
-			0, // stride
-			null  // array buffer offset
-			);
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, colorBuffer);
-	glVertexAttribPointer(1, // attribute 1
-			3, // size
-			GL_FLOAT, // type
-			false, // normalized?
-			0, // stride
-			null  // array buffer offset
-			);
-	// Draw the triangle!
-	glDrawArrays(GL_TRIANGLES, 0, 3); // Starting from vertex 0; 3 vertices total -> 1 triangle
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
+	vertexArray.enable(0);
+	vertexBuffer.bind();
+	vertexArray.pointer(0, 3);
+	vertexArray.enable(1);
+	colorBuffer.bind();
+	vertexArray.pointer(1, 3);
+	vertexArray.draw(PrimitiveType.TRIANGLES, 0, 3); // Starting from vertex 0; 3 vertices total -> 1 triangle
+	vertexArray.disable(0);
+	vertexArray.disable(1);
 }

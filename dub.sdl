@@ -2,7 +2,7 @@ name "opengl"
 license "Boost"
 copyright "Copyright © 2017, webfreak"
 authors "webfreak" "rikki"
-description "Dynamic & Static OpenGL bindings with documentation generated from the spec using ogl_gen"
+description "High Level wrapper + Dynamic & Static OpenGL bindings with documentation generated using ogl_gen"
 
 subPackage {
 	name "gl2"
@@ -46,6 +46,15 @@ subPackage {
 	sourceFiles "static/opengl/gl4.d"
 	targetType "sourceLibrary"
 	libs "gl"
+}
+
+subPackage {
+	name "d"
+	description "High level OpenGL wrapper"
+	sourcePaths "highlevel"
+	importPaths "highlevel"
+	targetType "sourceLibrary"
+	dependency "opengl:gl4" version="*"
 }
 
 targetType "none"
