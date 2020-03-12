@@ -9,21 +9,27 @@ subPackage {
 	description "Legacy OpenGL functions (shared library)"
 	sourceFiles "dynamic/opengl/gl2.d" "dynamic/opengl/loader.d"
 	targetType "sourceLibrary"
-	libs "gl"
+	libs-linux "gl"
+	libs-osx "gl"
+	libs-windows "opengl32"
 }
 subPackage {
 	name "gl3"
 	description "OpenGL 3.x functions (shared library)"
 	sourceFiles "dynamic/opengl/gl3.d" "dynamic/opengl/loader.d"
 	targetType "sourceLibrary"
-	libs "gl"
+	libs-linux "gl"
+	libs-osx "gl"
+	libs-windows "opengl32"
 }
 subPackage {
 	name "gl4"
 	description "OpenGL 4.5 functions (shared library)"
 	sourceFiles "dynamic/opengl/gl4.d" "dynamic/opengl/loader.d"
 	targetType "sourceLibrary"
-	libs "gl"
+	libs-linux "gl"
+	libs-osx "gl"
+	libs-windows "opengl32"
 }
 
 subPackage {
@@ -31,21 +37,27 @@ subPackage {
 	description "Legacy OpenGL functions (static wrapper)"
 	sourceFiles "static/opengl/gl2.d"
 	targetType "sourceLibrary"
-	libs "gl"
+	libs-linux "gl"
+	libs-osx "gl"
+	libs-windows "opengl32"
 }
 subPackage {
 	name "gl3-static"
 	description "OpenGL 3.x functions (static wrapper)"
 	sourceFiles "static/opengl/gl3.d"
 	targetType "sourceLibrary"
-	libs "gl"
+	libs-linux "gl"
+	libs-osx "gl"
+	libs-windows "opengl32"
 }
 subPackage {
 	name "gl4-static"
 	description "OpenGL 4.5 functions (static wrapper)"
 	sourceFiles "static/opengl/gl4.d"
 	targetType "sourceLibrary"
-	libs "gl"
+	libs-linux "gl"
+	libs-osx "gl"
+	libs-windows "opengl32"
 }
 
 subPackage {
